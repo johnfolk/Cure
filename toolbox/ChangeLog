@@ -1,0 +1,525 @@
+Version 1.2.0
+        John's changes to for example DeviceAddress.hh that moved from
+	cure/hal to cure/toolbox.
+	
+Version 1.1.0
+        CoSy demo review 2 version	
+	
+Version 1.0.0
+	Explicit multi threaded environment
+
+	Configuration files much more powerful
+
+	AddressMaker is the CURE way of making an application at run-time
+	by allowing you to connect filters at execution time specified ina
+	configuration file.
+
+Version 0.2.8         
+	Added method in EKFSLAM to access the covariance matrix from the
+	EKF object, or to be precise a pointer to this matrix.
+
+Version 0.2.7         
+        Added function to save/load tracked keys using the name of a file
+	in addition to the functions that took an fstream.
+	
+	Now can set maxVerifiedAge and maxUnverifiedAge in ScanMotionTracker
+        
+	Fixed bug in ConfigFileReader that could not properly handle 
+	prefix to numbers (int and double), i.e. +,-,.
+
+        Can set scale for displaying ellipsoids in RLDisplayFeaureMap
+
+	Can query distance to front an dback from center of robot and min
+	and max values for x and y in MotionAlgorithm
+	
+        RLDisplayFeaureMap added flag that allows you to display cubes
+	instead of ellipsoids to increase speed.
+	
+        PointFeatureHelper: Now you can send in pointers to get hold of
+	the values that are compared to the threshold for
+	triangulation. This way you can tune by setting loose threshold
+	and instead look at which points are good and which are bad and
+	then look at what that corresponds to in terms of parameter values
+	
+        Added MotionCmd::decc that can be used to specify a desired
+	decceleration.
+
+        Made two versions of getCovCoordinates and the operator- in
+	Transformation3D const. The const issue is a big of a problem I
+	think but I can see that it is not so easy to get around.
+	
+        Added setXYTheta in Transformation2D and Transformation3D with
+	arguments as x,y,theta and not as an array which some very rarely
+	work with
+
+        Added constructor with x,y(,z) arguments for Point2D, Point3D and
+	Vector3D. Also added setXY and setXYZ in Vector3D that takes 2 and
+	3 arg respectively so that you can set them without having to make
+	an array first.
+	
+        Moved some of the code from NDMain into base class MotionAlgorithm
+	having to do wit setting up shape of the robot.
+
+        Added function MotionAlgorithm::getWidthAndLength that calculates
+	width and length given the E polar shape description array.
+	
+	ScanMotionTracker: Lower debug level on function which changes
+	objects coordinate frame
+
+        Template class CircularBuffer now takes two arguments so that you
+	can provide a class that will provide the getNewBufferItem
+	function if you want to get something else then what is provided
+	as the second argument for the CircularBuffer template. This is
+	useful when inheriting from a class inheriting from
+	CircularBuffer. The construction will now be for example:
+	class MyBufferItem {
+	....
+	};
+	class MyBuffer : public CircularBuffer<MyBuffer,MyBufferItem>
+	{
+	};
+	
+Version 0.2.6
+        ScanMotionDetector now has function reset to start over and clear
+	the buffer of reference free space wcans. Also increased debug
+	level on ScanMotionTracker to 35 even though it is still under
+	development but it will be used now.
+        
+	Updated the maps in cfg/maps
+	 
+        Added directory with an initial version of a particle filter for
+	localization. So far only handles wall measurements
+        
+	Added the class NormalDistrGenerator which can create normal
+	distributed samples
+	
+        RoboLook can now display points
+
+	RoboLookProxy does not require port argument
+        
+	Added Timestamp::operators +/-(t1,t2) i.e. operators for adding
+	and substracting timestamps. Also made the operators and their
+	helper functions inline so that they can be used as a real
+	alternative to doubles. Also changed the printing function so that
+	negative numbers are presented in a more reasonable way -0.1 as
+	-0.1 and not -1.900000 which can be a bit confusing before you
+	check the documentation.
+
+	PoseArchiev can now calculate transformation to and from the
+	archive relative to a pose in some other coordinate system. Made
+	arg for addPose const. Storing last argument for addPose always so
+	that it can be used for interpolations/extrapolations when the
+	desied time is outside the data in the dataslotaddress because of
+	not enough motion. That is, with a threshold for adding new data
+	to the DataSlotAddress::m_Archive it could happen that we ask for
+	the pose at a time after all data in the archive but before the
+	last data we used to call addPose with.
+	
+	John changed a bunch of thing, not sure what though or it if was
+	just modification for the new version of automake
+
+Version 0.2.5
+        Added class CircularBuffer that implements a template for a
+	circular buffer
+
+	Added PoseArchive which uses a DataSlotAddress to implement an
+	archive that can be used to interpolate and extrapolate poses and
+	also get poses in other coordinate systems that have a fixed
+	transformation to the poses in the archive. This latter is useful
+	if you have an archive with odometry and a world pose at some time
+	and you want the world pose at some other time.
+	
+	New error TIMESTAMP_IN_FUTURE in TimestampedData.hh used in
+	DataSlot.cc
+	
+	More functionality in XDisplay2DMap so that demo programs can be
+	written easier without RoboLook
+	
+	Now added some example maps of CVAP to the distribution
+	
+Version 0.2.4
+	Added comments to many more classes.
+
+        Work on filters for collition avoidance, got etc and sonar based
+	grid stuff
+	
+Version 0.2.3
+        Removed () around object type argument for operator new in
+	CommandAddress and GridMaker. Not accepted by new compilers
+
+	Fixed default values for max speeds in gateway mode. Was not set
+	and thus (0,0). Actually listening to the m_UseTrimPath flag so
+	that trimming is not done by default.
+
+	Fixed bugs in NDMain. Readings LARGER than dMax are set to 0 which
+	means that we need to check for values <= dMax when looking for
+	obstacles. Now values at dMax_ resulted in obstacles inside the
+	robot. Only observed in simulation. Setting the target angle even
+	if we find an obstacle inside the robot so that other methods can
+	use this as the target angle for their actions.
+
+	Can now specify max size of a frontier for FrontierFinder so that
+	you do not get one large frontier if there is complete open space
+	for example.
+
+	NavController now has a timeout mechanism so that a task can fail
+	due to timeout when there is not enough progres toward the
+	goal. 
+
+	NavController implements findPath function that first tries to
+	head directly for the goal and then calls NavGraph::findPath to
+	make it less depended on the NavGraph.
+
+	NavController can exec a given path. Experimental new follow
+	mode. PoseProvider, NavGraph and LocalMap are made public so that
+	others can use them easily.
+
+	Fixed #define for NavGraphGateway, did not match string in #ifndef
+	which meant that you could include the file multiple times which
+	cause problems
+	
+	FroniterExplorer added using FrontierFinder and NavController to
+	do the control
+
+	Fixed bug in saveGraph with string arg which tried to open file
+	for reading instead of writing
+
+	Moved RLDisplaySICK and RLDisplayHelper to AddressBank from Map/Apps
+	
+	Added ScanMotionDetector and ScanMotionTracker which are not
+	tested yet so much but should detect motion in a scan and track it
+	respectively.
+	
+Version 0.2.2
+        Moved graphical SLAM into separate module with library name
+	libCureGraphicalSLAM and you include with prefix
+	cure/graphicalslam/
+
+	GridMaker  consolidate sensor data 
+	over varing time intervals into a standardize format of GridData  
+	sets
+
+	CollisionAvoidance can use GridMaker output to do simple low level
+	path checking.  First use of CommandExecuter Interface
+	
+Version 0.2.1
+	Fixed bug in TurnMotion where variable E_ was deleted in addition
+	to being deleting the base class MotionAlgorithm. This resulted in
+	double free errors. Added checks in some other classes before
+	deleting objects
+
+	RoboLook now supports writing single frames and grabbing
+	continously which can be controlled with functions from
+	RoboLookProxy.
+
+	Made SensorData class TimestampedData
+
+	First version of CommandExecuter Interface is created
+
+	GridData Object to hold a Binary Matrix, its meaning in some frame, 
+	and useful functionality. 
+
+Version 0.2.0
+	AddressBank now global static so you do not have to know about
+	it. The result of this is that you should not use the AddressBank
+	as the first arguments for the constructors of DataSlotAddresses
+	etc as before. Programs inside the tolbox should have changed this
+	already but external programs need to be changed as well.
+
+	More documentation
+
+	Bug fix in function for creating virtual scans from LocalMap 
+
+        Initial versions of BinaryMatrix (efficient version of matrix with
+	0/1 intended for for example simple maps) and ShortMatrix which
+	does basic matrix integer arithmatics
+
+	Improved EKFLocalizer::resetRobotPose by setting CovType unless
+	you say you want to set it yourself
+
+	Search engine not activated by default since it will not work on
+	some machines apparently (Johns for example)
+
+	Added GridContainer and LocalGridMap which are templetes that can
+	handle any data you want for each cell. Also added
+	GridLineRayTracer that maes it easy to draw traverse lines in a
+	grid when you want to update it with laser data for example.
+
+	Added XDisplayLocalGridMap that can display LocalGridMaps,
+	currently only the ones that have unsigned chars with 2 for
+	unknown, 0 for free and 1 for obstacles.
+	
+	Added XDisplayGridMap that cna display a BinaryMatrix.
+
+	Added initial version of a FrontierFinder that looks in a
+	LocalGridMap and finds frontier, i.e. borders between explored and
+	free space.
+	
+	NavController now can trim the path to skip nodes so that it does
+	not have to follow the graph so strictly. Need to be turned on
+	manually. 
+
+Version 0.1.6.8
+	Cleaning up by John in Matrix stuff and some mapping classes
+
+	Added function approachXYA to NavController. You can now also set
+	the tolerance for the approach state.
+	
+Version 0.1.6.7
+	Now can set/get tolerances for position and orientation
+	
+	Added function getPose,getTaskType,getCurrentNode,getTargetNode to
+	NavController. Also changed from state to tasktype as it describes
+	the task rather then the state of the controller.
+
+Version 0.1.6.6
+	Fixed bug in NavController. Now it uses the TurnMotion algorithm
+	to do the final turn on the spot so that it is safer.
+
+Version 0.1.6.5	
+        Moved out DFKI CoSy player apps from examples/player
+	
+	Incorporated Dirk Schulz changed to NavController for approachXY
+
+	Fixed bug with non constant size in range array
+
+	Fixed problem in examples/player/Makefile where -lCureMapXDisplay
+	was missing
+	
+Version 0.1.6.4
+        Moved ConfigFileReader and FileAddressManager out from Map/Apps into
+	AddressBank. Moved XDisplay2DMap from Map/Apps to Map/XDisplay
+	
+	Can specify method to use when creating a virtual scan from a
+	LocalMap. If there is no information in the map some heuristic is
+	needed such as setting the value to 0, to max range, to the
+	longest known neighbour
+	
+Version 0.1.6.3
+	Added missing switch case from main client message processing
+	function to getNeighbourNodes. Also fixed bug in getNeighbourAreas
+	and made neighbour spell the same in more places at least.
+	
+Version 0.1.6.2
+        Fix in ConfigFileReader in getFiles which seems to have fixed
+	problems with adaboost stuff (could not load any files found via
+	config file before).
+	
+Version 0.1.6.1
+	Now actually distributing player_navserver, NavAsciiSocketServer
+
+	Particle filter used for 3D visual landmark localization.
+	
+Version 0.1.6.0
+        Added NavController that can help with navigation controll. It is
+	not very much tested yet but it seems to more or less do the
+	job. The idea is that you provide it with a LocalMap, NavGraph and
+	a PoseProvider and it will calculate the appropriate command to
+	send to the hardware. It will not send it however. It relies on
+	someone implementing the method execCtrl(MotionCmd). This is done
+	in the examples/player/player_navserver for illustration
+	
+	LocalMap now has functions addScan and moveRobot working directly
+	with SICKScan object and Cure objects for position of laser and
+	robot. Improved display function by not clearing all objects
+	before redrawing them, instead replacing objects.
+		
+Version 0.1.5.9
+	Added utility for displaying a path in robolook displayPathRL. Can
+	set separation between plotted points, color, environment,
+	etc. Will print total time of path and distance
+        
+	Added switch to turn off dislaying in RLDisplaySICK
+        
+	Changed return values of the triangulateBuffer function in the
+	point helper match the description in the header file. 
+	-1 : could not triang
+	-2 : had to throw away part of the data to triang (risky to use!)
+	-3 : distance point to bearing + mse test
+	-4 : 2nd derivative test
+	
+	Now displayMapFile can be told to use only one line color, not to
+	show end points and not the graph even if such exists
+
+	Added some settings functions in RLDisplayFeatureMap to set wall
+	line with, to uses or not dfferent colors for the wall lines, etc
+	
+Version 0.1.5.8
+	Added skeleton for program to use to classify scans. It reads
+	odometry and scan data from file. It can use localization if a map
+	is provided and can display scan and robot in RoboLook
+	
+Version 0.1.5.7
+	NavGraph can answer what id the current node has and send event
+	new door that are added
+
+	Reformulated the question about saving the map in example programs
+	which was unclear to say the least. Added option l that list the
+	nodes with names in player_nav. player_nav allows you to give id
+	OR tag, you do not have to specify first which.
+	
+Versoin 0.1.5.6
+	Added some programs under examples/offline that for segment scans
+	into rooms, corridors and doorways based on a NavGraph. Also added
+	a program for displaying the results of a classification of the scans
+	
+Version 0.1.5.5
+	Changes to initial uncertainty for point features
+
+	Can merge tracked keys for EKF
+
+	Fixed error in root Makefile.am file for Aria stuff
+	
+Version 0.1.5.4
+	Added one example for how to integrate with Aria
+
+Version 0.1.5.3
+        Added program segmentScans under examples/offline that puts a
+	label on each scan given a map of the environment and a navigation
+	graph. The graph and map can for example be created with
+	lineSlamWithGraph in the same directory. Currently the corridor
+	area is hardcoded to alwys be the second area that the robot
+	visits. Works at CAS most of the time but of course has to be
+	fixed to be done automatically.
+        
+	Socket interface under examples/player now supplies time stamp
+	before the pose t_sec t_usec x y theta
+	
+Version 0.1.5.2
+        Added addOdometry, addScan, addInertial and addMeasurementSet to
+	the PoseProvider interface. Made args for the first three
+	const. Unfortunately this had to be implemented using a temporary
+	object in WrappedXXX since the write functtion of the slots do not
+	support const.
+
+	Calling init() in copy constructor of SICKScan
+	
+Version 0.1.5.1
+        Improved version checking to give more helpful information about
+	how to fix a problem
+	
+Version 0.1.5
+	Added check for version in Makefile of example programs.
+
+	Really no changes to the source wanted to get rid of all 0.1.4preXX
+	when comparing version string
+	
+Version 0.1.4
+
+        Example programs now put door nodes where the laser was when a
+	narrow opening was found and not where the robot center was
+	
+	Changed player_nav and AscciSocketServer to use NavGraph::findPath
+	
+        Added findPath in NavGraph with plenty of different arguments combos.
+	
+	Fixed bug in ConfigFileReader that made it unable to read for example
+	SENSORPOSE if there was no empty line after the SENSORPOSE section
+	
+        Added loadGraph function in NavGraph so that you do not have to
+	open file yourself
+	
+        Reduced number of calls to clearXXXX in RoboLook, it is much
+	better to call addXXXX with the replace flag set to true
+
+        Added code for compensating for the shape of the robot. To get better
+	safety performance when using the ND code you should use this class 
+	after the standard ND code.
+	
+        Added function for displaying SICKScan in RLDispayHelper where you
+	do not have to provide robot id, the lastRid is used instead
+	
+	Added player_slamserver to examples/player that provides a socket
+	based server for accessing information from the slam process. 
+	Key q/Q to quit player_slamserver and printout at debug
+	level 31 of what message was sent from server to client.
+
+	Now FeatureMap has load/saveMap that takes filename strings
+	
+        HelpFunctions now has more functions for distances from points to
+	lines and segments
+	
+        slamDemo can now write a file with the robot poses if you use the
+	-o option
+	
+        All libraries inside Cure are now prefixed with Cure to avoid
+	possible name clashes with other packages that also defined
+	libMath for example.
+	
+	The configuration files can now contain more information for the
+	sensor configurations. You can for example specify how well you
+	know their poses and which dof are fixed and which are
+	uncertain/moving.
+	
+	Added WrappedSLAM and WrappedLocalization which replace many of
+	the old files from before and provides a more general interface
+	to the SLAM code.
+
+        Added function resetRobotPose in localizer so that a user can
+	reset the localizer after being kidnapped for example.
+
+	Now actually setting tag on marked pose. Code disapeared before
+	somehow during refactoring.
+
+	
+Version 0.1.3 
+        The list of nodes m_Nodes in NavGraph now contains pointers to
+	NavGraphNodes so that it can hold pointers to any subclass as
+	well, for example a NavGraphGateway
+
+	Deals with gateways in the graph. When you add a gateway node you
+	partition the graph into another area. The NavGraph can reject
+	gateways if it detects that it possible to reach the other side of
+	the gateway without going through another gateway. This makes it
+	possible to remove many of the false gateways that occur in rooms.
+ 	
+	Corrected order of the comments for the ODOMMODEL for the bias
+	parameters.
+	
+	Added another directory under examples called offline where there
+	are currently two example programs, one that does offline mapping
+	similar to buildLineMap under src/Map/Apps but in a cleaner way
+	which makes it easier (hopefully) to undertand what needs to be
+	done. This program also illustrates how a graph can be built. The
+	othe rprogram is odometryModelTuner that lets you evalutae
+	different odometric model parameters.
+	
+Version 0.1.2 (2005-05-17)
+	
+        Removed memory leak from MapHelper caused by removing the pointer
+	to objects in the PosedFeatures-list when they referred to invalid
+	map objects. They had to be deleting as well after removed from the
+	list.
+
+	Removed small memory leak from ConfigFileReader caused by not
+	deleting the m_CfgFile fstream object.
+
+	Removed small memory leak from XDisplay2DMap.cc where two calls to
+	XCreateGC were not matched with XFreeGC
+
+	ConfigFileReader now looks at the path to the first config file
+	given to the init function. This is typically something that is
+	read from the command line and it helps t can find more files in
+	that directory automatically. It will look for include files first
+	in the current directory, the in the same place as the first
+	include file and then in the place specified by the INCLUDEPATH
+	variable of the first include path.
+
+	Fixed bug in TurnMotion that left a couple of variables
+	uninitialized which caused it to happily turn whatever the
+	obstacle configuration.	
+	
+Version 0.1.1 (2005-05-13)
+	Including examples directory in distribution and creating the
+	Makefile and linemap.ccf file automatically so that the path to
+	the install directiry is correct
+
+Version 0.1 (2005-05-12)
+        Made sure that the entire toolbox comforms with automake enough to
+	to "make distcheck"
+	
+2005-05-06:
+	Changed file suffix for config files from .cfg to .ccf for cure
+	config file
+
+	
