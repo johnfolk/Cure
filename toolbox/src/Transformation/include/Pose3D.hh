@@ -10,7 +10,7 @@
 #define CURE_POSE3D_HH
 
 #include "Transformation3D.hh"
-#include "include/Timestamp.hh"
+#include "Timestamp.hh"
 #include "TimestampedData.hh"
 
 //#include <sstream>  // istringstream

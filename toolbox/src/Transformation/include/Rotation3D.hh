@@ -9,7 +9,7 @@
 #ifndef CURE_ROTATION_HH
 #define CURE_ROTATION_HH
 
-#include "include/Rotation2D.hh"
+#include "Rotation2D.hh"
 namespace Cure{  
   
 /**
