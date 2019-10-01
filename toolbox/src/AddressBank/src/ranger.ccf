@@ -1,0 +1,468 @@
+# Global names are assigned initial values here
+#
+# Global defines are so two filters can talk to one another
+# about a common concept. 
+# A key that id's the meaning of the numbers is generated for each 
+# number value given in this list.
+# In the Filter's Global config line, the association
+# of this Global name/key and some internal state is made.
+# The filter may very well overide these CovTypes in her Global line
+# 
+# There is no attempt to have one estimate of these available 
+# to everyone once things start.  The filters will have there own 
+# estimates which they can share as they like.
+#
+# config generates the key by counting at run time
+#Name init values ...  max CovType in general 0xFFFF FFFF->maxdim=32
+#
+GLOBAL
+#
+RobotStartPose     Value    0 0 0 0 0 0  
+RobotStartVelocity Value    0 0 0 0 0 0  
+XRot               Value    0 0 0 0 0 0  
+DampingDegree      Value    1 1 1 1 1 1  
+DampingStrength    Value    1 10 10 10 10 1  
+LinearActuationTransferFactor Value 2.66667E-4 1E-4 1E-4 
+AngularActuationTransferFactor Value 2.777778E-5 
+WaterVelocity      Value    0 0 0        Cov 1E-2
+GPSOrigin          Value   39.2 -7.45   
+# these are the offset poses of the sonar just guessed
+SonarL             Value   .3 0 0 1.910633 0 1.570796  
+SonarR             Value   .3 0 0 1.230959 0 1.570796
+
+#This is how one might specify a whole chain of transformations to the sensor
+#one can give each part of the chain ist own uncertianty and or estimate its 
+# offset  
+SonarL0            Value    0 0 .23 0 0 0 
+SonarL1            Value    0 0 0 0 .012 0 
+SonalrL2           Value    0 0 0 1.5709 0 0 
+
+#damp degree 1 .8*dampingstrength=1200*LinActTransFac
+#damp degree 2 .8*.8*dampingstrength=1200*LinActTransFac
+
+
+# Here we tie names to senorTypes and ID so we can use the names elsewhere
+#
+# Name SensorType   ID
+#
+SENSORS
+#
+LBL    LongBaseLine 1
+Act    Actuation    1
+Alt    Altitude     1 
+Depth  Depth        1
+GPS    GPS          1
+IMU    Inertial     1
+SonarL Sonar        1 
+SonarR Sonar        2 
+
+#
+# here we bind  Names to descritpions of the data 
+# ClassType ID SensorType SensorID
+# The point is to make these unique (and the correct types)
+#  Name            Class          ID SensorName  
+#
+DATADESCRIPTORS
+#
+RawIMUfile        MeasurementSet   1 IMU
+RangerIMURaw      MeasurementSet   1 IMU
+RangerActRaw      MeasurementSet   1 Act
+RangerAltRaw      MeasurementSet   1 Alt
+RangerDepthRaw    MeasurementSet   1 Depth
+RangerGPSRaw      MeasurementSet   1 GPS
+RangerLBLRaw      MeasurementSet   1 LBL
+IMUOut            Pose3D           2 
+IMUMSet           MeasurementSet   2 IMU
+ActIncOut         Pose3D           3 
+ActOut            StateData        2 Act
+AltOut            MeasurementSet   2 Alt
+DepthOut          MeasurementSet   2 Depth
+GPSOut            MeasurementSet   2 GPS
+LBLOut            MeasurementSet   2 LBL
+IMUCorrect        GenericData      3 
+RangerActCorrect  GenericData      0 
+RangerAltCorrect  GenericData      0 
+DepthCorrect      GenericData      3 
+PredictOut        DataSet          1 
+SonarDectionsL    MeasurementSet   1 SonarL
+SonarDectionsR    MeasurementSet   1 SonarR
+#
+# The ID=0 makes this 'match' any descritptor of same class
+# So we can write 2 different outputs to this same input.
+# GPSCorrect and LBLCorrect are not used so we need not specify them.
+
+
+
+#  This says I want to define names for some DeviceAddresses
+#  The detailed config for the is further down.
+#
+DEVICEADDRESS
+#
+Create Rangerserial
+Create SonarImageProcessor
+
+
+#****************************************************************
+#
+# These are what do the calculations.
+#
+DATAFILTER
+Create RangerIMUFilter
+Create RangerActFilter
+Create RangerAltFilter
+Create RangerDepthFilter
+Create GPSFilter
+Create LBLFilter
+Create PredictFilter
+Create NavEKFFilter
+Create ThreadMerger
+
+
+
+
+#  These names are defined below this HOOKUP section tells the program 
+#  How to put together the app.  So what gets sent to what.
+#  Lines with a # are skiped. Blank lines end the section.
+#
+# Pull (optional Filtername) Dataname from (optional Filtername) Dataname
+# Push (optional Filtername) Dataname to (optional Filtername) Dataname
+#
+#
+HOOKUP
+#
+# The FilterBank is a parser and buffer for the input data.
+# Threads can write to the filter and go back to watching the input ports
+# while the data is sent further and to the right address by the filter bank.  
+#
+# The first layer is the filters that turn raw data into 
+# measurments with uncertianties (MotionFilters) 
+#
+Push FilterBank RangerIMURaw to RangerIMUFilter RangerIMURaw
+Push FilterBank RangerActRaw to RangerActFilter RangerActRaw
+Push FilterBank RangerAltRaw to RangerAltFilter RangerAltRaw
+Push FilterBank RangerDepthRaw to RangerDepthFilter RangerDepthRaw
+Push FilterBank RangerGPSRaw to GPSFilter RangerGPSRaw
+Push FilterBank RangerLBLRaw to LBLFilter RangerLBLRaw
+#
+#  These Motion filters then might want to share some data between them.
+#
+Push RangerIMUFilter IMUCorrect to RangerAltFilter RangerAltCorrect
+Push RangerIMUFilter IMUCorrect to RangerActFilter RangerActCorrect
+Push RangerDepthFilter DepthCorrect to RangerAltFilter RangerAltCorrect
+#
+#      Here we push to the Files
+Push RangerAltFilter AltOut to AltOut
+Push FilterBank RangerAltRaw to RangerAltRaw
+Push FilterBank RangerIMURaw to RangerIMURaw
+Push FilterBank RangerActRaw to RangerActRaw
+Push FilterBank RangerDepthRaw to RangerDepthRaw
+Push FilterBank RangerLBLRaw to RangerLBLRaw
+Push FilterBank RangerGPSRaw to RangerGPSRaw
+Push RangerIMUFilter IMUOut to IMUOut
+Push RangerDepthFilter DepthOut to DepthOut
+Push RangerAltFilter AltOut to AltOut
+Push RangerActFilter ActOut to ActOut
+Push LBLFilter LBLOut to LBLOut
+Push GPSFilter GPSOut to GPSOut
+#
+#
+# The Predict filter needs the Actuation data as input
+#
+Push RangerActFilter ActOut to PredictFilter ActOut
+#
+# It then is a server for the NavEKFFilter
+#
+Pull NavEKFFilter PredictDeadOut from  PredictFilter PredictDeadOut  
+#
+# The EKF also needs measurment data for updates.
+#
+Push RangerIMUFilter IMUMSet to NavEKFFilter  MeasurementOut 	
+Push RangerAltFilter AltOut to NavEKFFilter  MeasurementOut 	
+Push RangerDepthFilter DepthOut to NavEKFFilter  MeasurementOut 	
+Push LBLFilter LBLOut to NavEKFFilter  MeasurementOut 	
+Push GPSFilter GPSOut to NavEKFFilter  MeasurementOut 	
+Push FilterBank SonarDectionsR to NavEKFFilter  MeasurementOut 	
+Push FilterBank SonarDectionsL to NavEKFFilter  MeasurementOut 	
+#
+#     Here we push the raw data into our app
+#
+Push Rangerserial  to FilterBank
+#
+# The real time implementation would have us create a Thread merger
+# which can take as many devices as we have at the input,each with a
+# thread and then make them take turns writing to the filter bank. 
+#
+#Push ThreadMerger MergeRobotOut to FilterBank
+#Push Rangerserial to ThreadMerger MergeRobotIn 
+#Push BlazedArray SonarDectionsL to FilterBank	
+#Push BlazedArray SonarDectionsR to FilterBank	
+
+
+# This is a long list one would normally just comment out most 
+# 
+# Here I say I want some named file address 
+# The final 1 forces this data only to be passed a 0 allows all to pass.
+# Like doing grep on the DataDescriptor.
+# Read/Write filename Descriptor.Name useDescriptor
+FILEADDRESS
+Write RawIMU.tdf   RangerIMURaw 0
+Write RawAlt.tdf   RangerAltRaw 0
+Write RawDepth.tdf RangerDepthRaw 0
+Write RawGPS.tdf   RangerGPSRaw 0
+Write RawLBL.tdf   RangerLBLRaw 0
+Write RawAct.tdf   RangerActRaw 0
+Write IMUout.tdf   IMUOut 
+Write Depthout.tdf DepthOut 
+Write Actout.tdf   ActOut 
+Write Altout.tdf   AltOut 
+Write GPSout.tdf   GPSOut 
+Write LBLout.tdf   LBLOut 
+Write RawIMU.dat   RangerIMURaw 0
+Write RawAlt.dat   RangerAltRaw 0
+Write RawDepth.dat RangerDepthRaw 0
+Write RawAct.dat  RangerActRaw 0
+#Write IMUout.dat   IMUOut 0
+#Write Depthout.dat DepthOut 0
+Write GPSout.dat   GPSOut 0
+
+
+#
+# So the .tdf files just write to a file in cure format
+# Here we specify for the .dat files just what we want on each line of the 
+# file.
+#
+RawIMU.dat 
+m_TimeOffset 1154600000
+m_MessageString W 0 0 1 3 0
+
+RawAlt.dat 
+m_TimeOffset 1154600000
+m_MessageString W 0 0 1 1 0
+
+RawDepth.dat
+m_TimeOffset 1154600000
+m_MessageString W 0 0 1 1 0
+
+RawAct.dat
+m_TimeOffset 1154600000
+m_MessageString W 0 0 1 3 0
+
+GPSout.dat
+m_TimeOffset 1154600000
+m_MessageString V 0 0 1 2 0
+m_MessageString W 0 0 1 6 0
+
+
+
+
+# These can be used to write messages about data flowing in and 
+# out of addresses
+# 
+DEBUGADDRESS
+Create BugsBunny
+
+
+BugsBunny
+m_Level 127
+
+# This is some other ways of specifing what you want to wee printed to screen
+# Not used here as I left the above line blank
+m_MessageString Data 0 0 1 5
+#m_MessageString ShortData 0 0 1 1
+m_StopTime 1154611100 178368 
+m_StartTime 1154611420 178368 
+m_StopTime 1154611430 178368 
+m_StartTime 1154611577 178368
+m_StopTime 1154611600 178368  
+m_StartTime 1154611753 178368
+
+
+
+# create as many as needed, just give unique names of tags below.
+FILTERBANKADDRESS
+Create FilterBank
+
+#************************************************************
+#
+#addPort bufsize Decriptorname (optional)[subtyp comprssed dotypechck verbose]
+FilterBank
+addPort 10 RangerIMURaw 
+addPort 10 RangerActRaw 
+addPort 10 RangerAltRaw 
+addPort 10 RangerDepthRaw 
+addPort 10 RangerGPSRaw 
+addPort 10 RangerLBLRaw
+addPort 10 SonarDectionsL 
+addPort 10 SonarDectionsR 
+#
+#*************************************************************
+
+
+
+
+#format for Global:
+#
+# Global Globaltag Filter's tag filter's args
+#
+NavEKFFilter 
+Create NavEKFFilter 5 6 2 50 
+InputData PredictOut MeasurementOut 
+OutputData PredictOut
+Global RobotStartPose PoseState Init CovType 63 Cov1E-6
+Global XRot           ExtraRotation Init CovType 0 
+Global RobotStartVelocity VelocityState Init CovType 63 
+Global DampingStrength Parameter DampingStrength  
+Global LinearActuationTransferFactor Parameter TransAcceleration  
+Global AngularActuationTransferFactor Parameter AngularAcceleration 
+Global WaterVelocity Parameter WaterVelocity  
+Global SonarL Sensor 
+Global SonarR Sensor
+Global SonalL0 SensorOffset SonarL Init  CovType 4 Cov 1E-6  
+Global SonalL1 SensorOffset SonarL Init CovType 11 Cov 1E-8 
+Global SonalL2 SensorOffset SonarL Init  CovType 56  Cov 1E-4 
+Sensor SonarL 
+Sensor SonarR 
+MinPendingTime  0.75
+m_NoSlip  1E-4
+AllwaysPredict SonarR 1
+
+
+
+
+
+
+PredictFilter 
+#Create PredictFilter
+Create SimplePredict
+InputData ActOut 
+OutputData PredictOut
+Config_InSlots 0 100
+Config_SensorSlot 100
+m_PredictType 12dimNoAccel velocityDamp linearActuator angluarActuator 
+Global RobotStartPose PoseState  CovType 63 Cov 1E-6
+Global RobotStartVelocity VelocityState CovType 63 Cov 1E-6
+Global DampingDegree StaticParameter DampingDegree  
+Global DampingStrength Parameter DampingStrength  Cov 1E-8
+Global LinearActuationTransferFactor Parameter TransAcceleration  
+Global AngularActuationTransferFactor Parameter AngularAcceleration 
+Global WaterVelocity Parameter WaterVelocity  
+
+
+
+
+
+# The filters are constructed and configured by what is in the 
+# lines below the FilterName. Format is a 
+# cmd string = (Create/InputData/OutputData/Config_xxxx),
+# followed by the parameters.
+# Create is followed by the class name and any contructor args.
+# Input and OutputData are followed by the datanames of ports.
+# Config_xxx is specific config info, different for each filter.
+#*********************************************************************
+#
+#  SO For The GPSFilter:
+#
+# ConFig_Cov    m_Covariance(m^2)  m_MaxSquareSpeed(m^2)  m_MaxDropOut (sec); 
+# Config_Origin  latorigin longorgn
+#
+GPSFilter
+Create GPSFilter
+InputData RangerGPSRaw 
+OutputData GPSPose GPSOut GPSCorrect
+Config_Cov  16 400 3.5 
+#**********************************************************************
+
+
+#*****************************************************************
+#
+# Cov(0,0) Cov(1,1) Cov(2,2) 
+# Config_Adjustment negate_yaw negate_pitch negate_roll MagneticDeviation(rads)
+RangerIMUFilter
+Create RangerIMUFilter 
+InputData RangerIMURaw 
+OutputData IMUOut IMUMSet IMUCorrect
+Config_Cov 1E-6 1E-6 1E-6 0 
+m_NegateYaw 1
+m_NegatePitch 1
+m_NegateRoll 1
+m_MagneticDeviation 0
+
+
+#******************************************************************
+#
+# m_LinearCovariance  m_AngleRateCov m_AngleDistanceCov
+# m_SpeedPerRPM=.8/1200.0 m_CalibrationRPM
+# m_RiseTimeLinear m_RiseTimeYaw m_RiseTimePitch   
+RangerActFilter
+Create RangerActFilter 
+InputData RangerActRaw RangerActCorrect 
+OutputData ActIncOut ActOut
+Config_Cov  .001 .0004 .001 6.6666E-4 36000 1 4 4 
+useIncrementalOut 0
+m_LinearActCov    1
+m_AngularActCov   1E-6
+
+
+#******************************************************************
+#
+# cov (depthlimit<0) pitchlimit rolllimit
+RangerAltFilter
+Create RangerAltitudeFilter 
+InputData RangerAltRaw RangerAltCorrect
+OutputData AltOut
+Config_Cov  .0025 -7 .35 .1 
+
+
+RangerDepthFilter
+Create RangerDepthFilter
+InputData RangerDepthRaw 
+OutputData DepthOut DepthCorrect
+Config_Cov  .0004
+
+
+
+#Config_Cov m_CovarianceTime m_CovarianceSoundSpeed m_SoundSpeed m/s
+LBLFilter
+Create LBLFilter 
+InputData RangerLBLRaw LBLCorrect
+OutputData LBLOut
+Config_Cov 1E-6 4 1500
+
+# Could just write everything to a single input but the extra structure is nice
+ThreadMerger
+Create ThreadMerger 3
+InputData MergeRobotIn MergeSonarIn MergeCommandIn
+OutputData MergeRobotOut MergeSonarOut MergeCommandOut
+
+
+# create RangerDeviceAddress device speed  verbose
+Rangerserial
+Create RangerDeviceAddress /dev/ttyS0 19200 false
+OutputData RangerIMURaw RangerActRaw RangerAltRaw RangerDepthRaw RangerGPSRaw RangerLBLRaw
+CannedDataFilename run_log_2006-08-03_131909.alog
+
+
+
+# create SonarimageProcessor device 
+BlazedArray
+Create SonarImageProcessor USB 
+OutputData SonarDectionsL SonarDectionsR
+m_IntensityThreshold=3000;
+m_ClusterSize 9	
+m_MaxFeatures 10	
+m_UpdateImages=false
+m_SonarObsMinRange=2.0
+m_AngleVariance=1E-6
+m_AroundAxisVariance=2.778E-2
+m_RangeVariance=.01
+m_UpdateImages=true
+m_PolarImage=true
+m_BlazeAngle=0.339836909
+#asin((1.0/3.0); //rick r says
+
+
+
+
+
+#Here we can put the names of other ccf files to look in.
+INCLUDE

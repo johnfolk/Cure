@@ -1,0 +1,170 @@
+Cure::Address's are aassigned to thread spaces by an index called
+Thread.  This allows addresses within the same address space to
+communicate without the need for lock and unlock.  These locks are on
+the AddressBankThread object which is in turn on theAddressBank().
+Calls to read/write/push/pull/isThreadSafe as well as add/remove on
+theAddressBank() all require the caller to have the lock.  These
+methods will be refered to as 'locked methods'.
+
+The convention is if an address has write/read/push/pull called on it
+then it has the lock on the thread space.  It can then call the locked
+methods so long as it stays in its own thread space.
+
+If an object needs to call a locked method outside its thread space it
+must first call getThread(thread) on theAddressBank() and
+releaseThread(thread) when done.  An alternative is to call one of the
+readLocked ect. methods which get and release the lock for you.
+
+This of course can in principal lead to deadlock if one thread holding
+its own lock then calls writeLocked on an address which in turn causes
+write lock on the first thread.  That is how thread work and the
+programmer must be aware still of this.  We haven't allowed the the
+programmer to forget about threads but we have set up a way to manage
+them with minimal locking.
+
+##############################################################
+
+HERE IS THE MAIN RULE TO AVOID COLLISION
+
+Any object that spawns a thread that then calls a locked method should
+get the lock and release the lock.  
+##############################################################
+
+So Device A has a thread checking some input.  It gets data and
+wants to push it out to the world.  It should call pushDataLocked
+which gets the lock for it.
+
+Exceptions can be made if the programer is certain no other thread
+will be using the thread space in question.  We have set this up as
+well using the Address::isThreadSafe, AddressBank::makePermanent, and
+ThreadSwitcher::setPushLocked.  Explained a little later.  
+
+If Device A knows that the space is free it can just pushData with no
+lock.  That is if it is using a ThreadMerger for instance to protect
+and queue.  The input there is safe for multithreading.
+
+If the ThreadMerger is not going to be deleted until after the device
+and no other Address is in the thread space then locking the thread
+space is not needed.  In practice it is not so nice to have each
+device thread blocking on this pushDataLocked so one would set things
+up like this and set the Device to not get the lock or at least it
+would be uncontested always.  
+
+
+The ThreadMerger then makes most of the mutex calls and organizes the
+queue of data.  No other objects need to lock except under config and
+delete.  A bunch of input devices pour data on the ThreadMergerInputs.
+The inputs are Mutex protected by the ThreadMerger itself and the
+data put in the queue.  The ThreadMerger pusher thread is awaken and
+it gets data form the queue and pushes out to its outputs, locked.  It
+would even be possible to eliminate having the ThreadMerger lock its
+output space if one knew that only the ThreadMerger pusher was operating
+here.  Then set ThreadMerger.m_PushLocked=0.  Not really to be recommended
+since you may later start assuming the thread space in question is protected
+and write to it form some other thread getting the now pointless lock.
+
+The ThreadMerger can write to different thread spaces on its different
+outputs.  
+
+Device addresses often can have two way data flow.  In those cases
+they would normally have to protect there data internally from
+multthread access.   In that case again no lock is needed if the 
+device is going to be permanent.
+
+-----------------------------------------------------------------------
+
+This is how you set up such a no locking push/pull.  The address,call
+it A, that doesn't need to have the address space locked must be set
+up as permanent.  This is done by calling: 
+
+A->setCanPermit() 
+
+on the address A.  This should only be done if one knows it will be safe
+either by internal protection in A or the way the program is set up.
+A can not now assume it has the lock on its thread space when writen to.
+And A should probably be deleted after any object set to push/pull  it
+(not neccessary but good practice).
+
+Then if one uses an AddressMaker subclass to do the hookup from a 
+ccf file one can just say
+
+HOOKUP
+Push B to A  
+
+Where B is some other address in some other Thread space.  The AddressMaker
+ will see the problem of pushing between two thread spaces and insert a
+ThreadSwitcher between them.  The ThreadSwitcher will then do:
+
+A->isThreadSafe(B)
+
+on A when it gets its first data to push out.  If A succeded in setCanPermit
+it will now return true to isThreadSafe and record B's Thread index.
+After this the thread switcher will just call write on A without any locking.
+A can not now assume it has the lock on its thread space when writen to.
+(I know I just said that.)
+
+When A is deleted it will lock B's Address space to be sure that B
+doesn't try to write to A during removing A from the AddressBank.
+Once A is removed B has no way fo finding A anymore and will
+disconnect automatically. 
+
+So the trick is to just push between the two thread spaces as if you 
+were not aware of it, after having setCanPermit. Alternatively without an
+AddressMaker just do
+
+
+A->setCanPermit();
+ThreadSwitcher ts(B->Thread,A->Thread)
+B->push(ts.in(0))
+ts.out(0)->push(A);
+
+done.
+
+If you want it to use the locks just leave out the A->setCanPermit().
+
+---------------------------------------------------------------------
+
+
+If data is flowing both in and out of the process a separate
+ThreadMerger can be used for the output devices.  This would work the
+same except the inner application thread computing the output data
+would write to the ThreadMerger queueing the data to be written to the
+output.  This can also be handled by the device itself as in the
+SocketAddress which has no difficulty with multiple threads writing to
+it while it is reading its socket.  So the Socket can be A and the
+application thread output address B above.
+
+
+Then the addresses themselves need to be clear about their own
+threads.  So if an address is on a filter and calls write on the
+filter then the filter has the lock and can do only things in that
+thread space.  Most filters operate in only one thread space and can
+be totally indifferent to threads.  If that is not the case the filter
+must set up critical regions and mutex protect its data.  The filter
+has its own thread index which is the thread that its constructor and
+destructor runs in.  It will try to get any other locks it needs to be
+made or deleted.  
+
+So it fiterX is made with thread=4 and it will first
+
+make all its addresses on thread 4.  
+
+It then can do any setup on the ports.
+
+Then if the filter subclass is multthreaded (rarely the case):
+To change the Ports threads the subClass would call initPorts which
+gets locks as needed. 
+
+This is all handeled in the
+DataFilter base class contructor/destructor/initPorts.  When destroyed
+it will get the lock again on any addressess that are not in its
+thread space and change them to its thread space. Then delete them.
+
+
+
+
+
+
+
+
+
