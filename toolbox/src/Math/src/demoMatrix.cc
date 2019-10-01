@@ -1,0 +1,174 @@
+
+#ifndef DEPEND
+#include <iostream>
+#include <stdlib.h>
+#endif
+ 
+#include "Matrix.hh"
+
+using namespace std;
+using namespace Cure;
+
+int main(int argc, char * argv[])
+{
+  std::cerr<<"\n\nThe use of the Matrix Class will be illustrated by some exampels.\n";
+  std::cerr<<"\nMake a 3x3 empty matrix called ''a'\n";
+
+  std::cerr<<"\nMatrix a(3);\n\n";
+  Matrix a(3);
+  std::cerr<<"Its looks like this\n";
+  std::cerr<<"\na.print();\n\n";
+  a.print();
+  cerr<<"hit enter\n\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  std::cerr<<"Stick some numbers into it.\n";
+  std::cerr<<"\na=5.1;\n\n";
+  a=5.1;
+  a.print();
+  cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  std::cerr<<"and some more.\n";
+  std::cerr<<"\na(0,2)=4.3;\n";
+  std::cerr<<"\na(1,0)=2.3;\n\n";
+  a(0,2)=4.3;
+  a(1,0)=2.3;
+  a.print();
+  cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  cerr<<"make a copy of 'a' and call it 'b'\n";
+  cerr<<"\nMatrix b(a);\n\n";
+  Matrix b(a);
+  std::cerr<<"\nb.print();\n\n";
+  b.print();
+  cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  cerr<<"Now lets do matrix multiplication\n";
+  std::cerr<<"\nMatrix c;\n";
+  std::cerr<<"\nc.multiply_(b,a);\n\n";
+  Matrix c;
+  c.multiply_(b,a);
+  c.print();
+  cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  int n=7;
+  Matrix m(n), h(n);
+  
+  Matrix mev(n),mlambda(n);
+  m=10;
+ for (int j=1; j<n; j++)
+   m(j,j)+=10*m(j-1,j-1);
+  for (int i=0; i<n; i++)
+    for (int j=0; j<n; j++)
+      m(i,j)+=(1-(double)rand()/(0.5*(double)RAND_MAX));
+
+ for (int j=0; j<n; j++)
+    {
+      m(2,j)=0;
+      m(3,j)=0;
+      m(j,2)=0;
+      m(j,3)=0;
+    }
+ m(2,2)=1;
+ m(3,3)=2;
+ m+=1;
+  m.symetrize(); 
+  std::cerr<<"try a bigger matrix m=\n";
+  m.print();
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  std::cerr<<"lets get the eigenvectors\n";
+  std::cerr<<"\n\nm.symmetricEigen(mlambda,mev);\n\n";
+  m.symmetricEigen(mlambda,mev);
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  cerr<<"the eigenvectors:\n";
+  std::cerr<<"\nmev.print();\n\n";
+  mev.print();
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  cerr<<"\nand the eigenvalues\n";
+  std::cerr<<"\nmev.print();\n\n";
+  mlambda.print();
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  std::cerr<<"we can invert m\n";
+  std::cerr<<"\nMatrix minv;\n\n";
+  Matrix minv;
+  std::cerr<<"\nminv=m;\n\n";
+  minv=m;
+  std::cerr<<"\nminv.invert();\n\n";
+  minv.invert();  
+  minv.print();
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  std::cerr<<"\nminv*=m;\n\n";
+  minv*=m;
+  std::cerr<<"\nThis should then be exactly zero (We add -1 times the Identity Matrix;\n\n";
+  std::cerr<<"\nminv+=(-1);\n\n";
+  minv+=(-1);
+  minv.print();
+  std::cerr<<"\nBehold the finite representation of the double.\n\n";
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  cerr<<"We can define m to be just the bottom right corner\n\n";
+  cerr<<"m.offset(3,5,4,2);\n\n";
+  m.offset(4,5,3,2);
+  m.print();
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+  cerr<<"We can define 'a' to be just the left  two columns\n";
+  cerr<<"\na.offset(0,3,2);\n\n";
+  a.offset(0,3,2);
+  a.print();
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+  cerr<<"then we can do any matrix operation on the sub-matrixes.\n\nb.multTranspose_(a,m,2);\n\n";
+  b.multTranspose_(a,m,2);
+  b.print();
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+  cerr<<"or transpose 'a' instead \n\nc.multTranspose_(a,m,1);\n\n";
+  c.multTranspose_(a,m,1);
+  c.print();
+
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+  cerr<<"return m to its original size\n";
+  cerr<<" \n\nm.reset(7,7);\n\n";
+
+  m.reset(7,7);
+  m.print();
+  std::cerr<<"hit enter\n";
+  cerr<<"===================================================\n";
+  getchar();
+
+
+  return 0;
+} 
